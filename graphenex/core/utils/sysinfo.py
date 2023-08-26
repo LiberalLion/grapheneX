@@ -25,15 +25,12 @@ class SysInformation:
 
         if isinstance(suffix, tuple):
             singular, multiple = suffix
-            if amount == 1:
-                suffix = singular
-            else:
-                suffix = multiple
+            suffix = singular if amount == 1 else multiple
         return str(amount) + suffix
 
     @staticmethod
     def get_network_info():
-        masks = list()
+        masks = []
         MaskResult = namedtuple('MaskResult', ['name', 'recv', 'sent', 'slug'])
         for mask, data in OrderedDict(psutil.net_io_counters(pernic=True)).items():
             if data.packets_recv > 0 or data.packets_sent > 0:
@@ -45,7 +42,7 @@ class SysInformation:
 
     @staticmethod
     def get_disk_info():
-        disks = list()
+        disks = []
         DiskResult = namedtuple('DiskResult', ['data', 'name'])
         for disk in psutil.disk_partitions():
             try:
@@ -61,15 +58,14 @@ class SysInformation:
     def get_general_info():
         uname = platform.uname()
         GeneralResult = namedtuple('GeneralResult', ['system', 'processor'])
-        res = GeneralResult(f"{uname.system} | {uname.version}",
-                            f"{uname.processor} - ({uname.machine})")
-
-        return res
+        return GeneralResult(
+            f"{uname.system} | {uname.version}",
+            f"{uname.processor} - ({uname.machine})",
+        )
 
     @staticmethod
     def get_all_info():
-        info_dict = {}
-        info_dict['disks'] = SysInformation.get_disk_info()
+        info_dict = {'disks': SysInformation.get_disk_info()}
         info_dict['network'] = SysInformation.get_network_info()
         info_dict['general'] = SysInformation.get_general_info()
 
@@ -84,11 +80,11 @@ class SysInformation:
             r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
         result = []
         for word in _punctuation_re.split(text.lower()):
-            word = normalize('NFKD', word) \
-                .encode('ascii', 'ignore') \
+            if (
+                word := normalize('NFKD', word)
+                .encode('ascii', 'ignore')
                 .decode('utf-8')
-
-            if word:
+            ):
                 result.append(word)
 
         return delim.join(result)

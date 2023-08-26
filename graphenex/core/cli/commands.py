@@ -77,27 +77,25 @@ class ShellCommands(Help):
 
         avb_modules = self.modules.get(self.namespace)
         if avb_modules is None:
-            avb_modules = list()
+            avb_modules = []
             for key, value in self.modules.items():
-                for name, module in value.items():
-                    avb_modules.append(f"{key}/{name}")
+                avb_modules.extend(f"{key}/{name}" for name, module in value.items())
         mline = line.lower().partition(' ')[2]
         # If namespace selected
         if '/' in mline:
             # title() -> given module string for getting rid of
             # the case sensitivity
             mline = mline.split('/')[0].lower() + "/" + \
-                mline.split('/')[1].title()
+                    mline.split('/')[1].title()
         offs = len(mline) - len(text)
         # Get completed text with namespace
         comp_text = [s[offs:] for s in avb_modules if s.startswith(mline)]
         # If no namespace found
-        if len(comp_text) == 0:
+        if not comp_text:
             # Try to complete with module names
-            avb_modules = list()
+            avb_modules = []
             for key, value in self.modules.items():
-                for name, module in value.items():
-                    avb_modules.append(name)
+                avb_modules.extend(name for name, module in value.items())
             mline = mline.title()
             comp_text = [s[offs:] for s in avb_modules if s.startswith(mline)]
         return comp_text
@@ -125,15 +123,13 @@ class ShellCommands(Help):
         if arg in self.modules.keys():
             for name, module in self.modules[arg].items():
                 wrapped = '\n'.join(textwrap.wrap(module.desc, max_width - 40))
-                table.table_data.append(
-                    [arg + "/" + name, wrapped])
+                table.table_data.append([f"{arg}/{name}", wrapped])
         else:
             for k, v in self.modules.items():
                 for name, module in v.items():
                     if arg.lower() in name.lower():
                         wrapped = '\n'.join(textwrap.wrap(module.desc, max_width - 40))
-                        table.table_data.append(
-                            [k + "/" + name, wrapped])
+                        table.table_data.append([f"{k}/{name}", wrapped])
         if len(table.table_data) > 1:
             print(table.table)
         else:
@@ -149,15 +145,13 @@ class ShellCommands(Help):
         if self.namespace:
             for name, module in self.modules[self.namespace].items(): 
                 wrapped = '\n'.join(textwrap.wrap(module.desc, max_width - 40))
-                table.table_data.append(
-                    [self.namespace + "/" + name, wrapped])
+                table.table_data.append([f"{self.namespace}/{name}", wrapped])
         else:
             for k, v in self.modules.items():
                 for name, module in v.items():
                     wrapped = '\n'.join(textwrap.wrap(module.desc, max_width - 40))
-                    table.table_data.append(
-                        [k + "/" + name, wrapped])
-          
+                    table.table_data.append([f"{k}/{name}", wrapped])
+
         print(table.table)
 
     def do_back(self, arg):
@@ -239,7 +233,7 @@ class ShellCommands(Help):
                 # Assigning property to the ModuleNameValidation class to 
                 # access modules within the selected namespace.
                 ModuleNameValidation.modules = self.modules[mod_ns].keys() \
-                    if mod_ns in self.modules.keys() else []
+                        if mod_ns in self.modules.keys() else []
                 mod_details = prompt(mod_questions)
                 mod_dict = {
                         "name": mod_details['mod_name'].title(),
@@ -255,18 +249,17 @@ class ShellCommands(Help):
                 # Write the updated modules.json
                 save_mod_json(data)
                 logger.info("Module added successfully. Use 'list' " + \
-                    "command to see available modules.")
+                        "command to see available modules.")
 
-            # EDIT & REMOVE
-            elif choice['option'] == "Edit module" or choice['option'] == "Remove module":
+            elif choice['option'] in ["Edit module", "Remove module"]:
                 mod_option = choice['option'].split(" ")[0].lower()
                 # Namespace selection
                 ns_prompt = [
                     {
                         'type': 'list',
                         'name': 'namespace',
-                        'message': "Select the namespace of module to " + mod_option,
-                        'choices': list(self.modules.keys())
+                        'message': f"Select the namespace of module to {mod_option}",
+                        'choices': list(self.modules.keys()),
                     }
                 ]
                 selected_ns = prompt(ns_prompt)['namespace']
@@ -275,8 +268,8 @@ class ShellCommands(Help):
                     {
                         'type': 'list',
                         'name': 'module',
-                        'message': "Select a module to " + mod_option,
-                        'choices': self.modules[selected_ns]
+                        'message': f"Select a module to {mod_option}",
+                        'choices': self.modules[selected_ns],
                     }
                 ]
                 selected_mod = prompt(mod_prompt)['module']
@@ -294,31 +287,34 @@ class ShellCommands(Help):
                         {
                             'type': 'list',
                             'name': 'property',
-                            'message': "Select a property for editing " + selected_mod,
-                            'choices': prop_list
+                            'message': f"Select a property for editing {selected_mod}",
+                            'choices': prop_list,
                         }
                     ]
                     selected_prop = prompt(prop_prompt)['property']
                     # New value for property
-                    new_val = prompt([{
-                        'type': 'input',
-                        'name': 'val',
-                        'message': "New value for " + selected_prop}])['val']
+                    new_val = prompt(
+                        [
+                            {
+                                'type': 'input',
+                                'name': 'val',
+                                'message': f"New value for {selected_prop}",
+                            }
+                        ]
+                    )['val']
                     new_val = new_val.title() if selected_prop == "name" else new_val
                     # Update the selected property of module
                     data[selected_ns][mod_index][selected_prop] = new_val
                     # Write the updated modules.json
                     save_mod_json(data)
-                    logger.info("Module updated successfully. (" + selected_ns + "/" +
-                        selected_mod + ":" + selected_prop + ")")
+                    logger.info(
+                        f"Module updated successfully. ({selected_ns}/{selected_mod}:{selected_prop})"
+                    )
 
-                # REMOVE
                 else:
                     data[selected_ns].pop(mod_index)
                     save_mod_json(data)
-                    logger.info("Module removed successfully. (" + selected_mod + ")")
-            else:
-                pass
+                    logger.info(f"Module removed successfully. ({selected_mod})")
         except Exception as e:
             logger.error(str(e))
         self.namespace = ""
@@ -331,8 +327,8 @@ class ShellCommands(Help):
         presets = get_presets()
         if arg:
             modules = [preset['modules'] for preset in presets \
-                if preset['name'] == arg]
-            if len(modules) == 0:
+                    if preset['name'] == arg]
+            if not modules:
                 logger.error(f"Preset not found: '{arg}'")
                 return
             modules = modules[0]
@@ -355,8 +351,7 @@ class ShellCommands(Help):
                 for name, mod in self.modules[self.namespace].items():
                     # Select the module if it equals to the module in
                     # the preset or equals to 'all'
-                    if module.split("/")[1].lower() == "all" or \
-                     module.split("/")[1].lower() == name.lower():
+                    if module.split("/")[1].lower() in ["all", name.lower()]:
                         # Select the module
                         self.module = str(mod)
                         # Show module information
@@ -379,7 +374,7 @@ class ShellCommands(Help):
                                     raise Exception("Cancelled by user.")
                             except:
                                 logger.info("Hardening cancelled. " + \
-                                f"({self.namespace}/{self.module})")
+                                    f"({self.namespace}/{self.module})")
             # Go back from the selected module and namespace
             self.module = ""
             self.namespace = ""
@@ -392,10 +387,10 @@ class ShellCommands(Help):
             max_width = table.column_max_width(1)
             # Create a table of presets
             for preset in presets:
-                mods = ""
-                for module in preset['modules'][:-1]:
-                    mods += '\n'.join(textwrap.wrap(module, max_width - 40)) + '\n'
-                mods += '\n'.join(textwrap.wrap(preset['modules'][-1], max_width-40))
+                mods = "".join(
+                    '\n'.join(textwrap.wrap(module, max_width - 40)) + '\n'
+                    for module in preset['modules'][:-1]
+                ) + '\n'.join(textwrap.wrap(preset['modules'][-1], max_width - 40))
                 table.table_data.append([preset['name'], mods])
             # Show the table
             if len(table.table_data) > 1:
@@ -430,14 +425,14 @@ class ShellCommands(Help):
                 print(out)
                 logger.info("Hardening command executed successfully.")
             except PermissionError:
-                err_msg = "Insufficient permissions for hardening."
-                if check_os():
-                    err_msg += " Get admin rights and rerun the grapheneX."
-                else:
-                    err_msg += " Try running the grapheneX with sudo."
+                err_msg = "Insufficient permissions for hardening." + (
+                    " Get admin rights and rerun the grapheneX."
+                    if check_os()
+                    else " Try running the grapheneX with sudo."
+                )
                 logger.error(err_msg)
             except Exception as e:
-                logger.error("Failed to execute hardening command. " + str(e))
+                logger.error(f"Failed to execute hardening command. {str(e)}")
 
     def do_exit(self, arg):
         "Exit interactive shell"

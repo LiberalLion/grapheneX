@@ -20,4 +20,4 @@ class HardenMethod:
         return self.__str__()
 
     def execute_command(self):
-        return getattr(self, self.target_os + "Exec").run_cmd(self.command)
+        return getattr(self, f"{self.target_os}Exec").run_cmd(self.command)

@@ -70,7 +70,7 @@ def page_not_found(e):
 
 def get_mod_count(mod_dict):
     """Return the count of modules in the dict"""
-    return sum([len(value) for key, value in mod_dict.items()])
+    return sum(len(value) for key, value in mod_dict.items())
 
 
 @socketio.on('get_namespaces')
@@ -91,19 +91,16 @@ def send_current_namespace(data):
 @auth_socketio
 def get_current_namespace(data):
     """Set the current namespace and send modules"""
-    modules = list()
     mod_dict = module_dict.get(data)
-    if mod_dict == None:
+    if mod_dict is None:
         logger.warn(f"Non-existent namespace: \"{data}\".")
     else:
         global current_namespace
         current_namespace = data
-        for name, mod in mod_dict.items():
-            modules.append({
-                'name': name,
-                'desc': mod.desc,
-                'source': mod.command
-            })
+        modules = [
+            {'name': name, 'desc': mod.desc, 'source': mod.command}
+            for name, mod in mod_dict.items()
+        ]
         logger.info(f'Sending modules of \"{current_namespace}\".')
         emit('get_module', modules)
 
@@ -114,13 +111,10 @@ def search_module(data):
     """Search module in the module list"""
     result = {name: mod for name, mod in module_dict.get(
         current_namespace).items() if data["query"].lower() in name.lower()}
-    payload = list()
-    for name, mod in result.items():
-        payload.append({
-            'name': name,
-            'desc': mod.desc,
-            'source': mod.command
-        })
+    payload = [
+        {'name': name, 'desc': mod.desc, 'source': mod.command}
+        for name, mod in result.items()
+    ]
     emit('search_module', {'result': payload})
 
 
@@ -134,26 +128,26 @@ def hardening_exec(data):
         hrd = module_dict[current_namespace][data]
         out = hrd.execute_command()
         print(out)
-        emit(data + "_log", {"msg": out, "state": "output"})
+        emit(f"{data}_log", {"msg": out, "state": "output"})
         success_msg = "Hardening command executed successfully."
         emit('log_message', {
             'tag': 'success',
             'content': success_msg
         })
-        emit(data + "_log", {"state": "success"})
+        emit(f"{data}_log", {"state": "success"})
         logger.info(success_msg)
     except PermissionError:
-        err_msg = "Insufficient permissions for hardening."
-        if check_os():
-            err_msg += " Get admin rights and rerun the grapheneX."
-        else:
-            err_msg += " Try running the grapheneX with sudo."
+        err_msg = "Insufficient permissions for hardening." + (
+            " Get admin rights and rerun the grapheneX."
+            if check_os()
+            else " Try running the grapheneX with sudo."
+        )
         emit('log_message', {
             'tag': 'warning',
             'content': err_msg,
             'duration': 2000
         })
-        emit(data + "_log", {"state": "error"})
+        emit(f"{data}_log", {"state": "error"})
         logger.error(err_msg)
     except Exception as e:
         fail_msg = "Failed to execute hardening command."
@@ -162,8 +156,8 @@ def hardening_exec(data):
             'content': fail_msg,
             'duration': 2000
         })
-        emit(data + "_log", {"msg": str(e), "state": "error"})
-        logger.error(fail_msg + " " + str(e))
+        emit(f"{data}_log", {"msg": str(e), "state": "error"})
+        logger.error(f"{fail_msg} {str(e)}")
 
 
 @socketio.on('add_module')
@@ -173,7 +167,7 @@ def add_module(mod):
     try:
         mod_name = mod['name']
         mod_ns = mod['ns']
-        logger.info("Adding new module: '" + mod_ns + "/" + mod_name + "'")
+        logger.info(f"Adding new module: '{mod_ns}/{mod_name}'")
         # Check namespace
         if not mod_ns:
             ns_error_msg = "Invalid namespace."
@@ -222,7 +216,7 @@ def add_module(mod):
         # Success event with module count
         emit('new_module_added', get_mod_count(module_dict))
     except Exception as e:
-        exception_msg = "Error occurred while adding new module. " + str(e)
+        exception_msg = f"Error occurred while adding new module. {str(e)}"
         emit('log_message', {
             'tag': 'warning',
             'content': exception_msg,

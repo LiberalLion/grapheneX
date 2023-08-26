@@ -19,7 +19,7 @@ class LinuxExec(OsExec):
         
         args = shlex.split(cmd)
         out = subprocess.PIPE
-        if args[-2] == '>' or args[-2] == '>>':
+        if args[-2] in ['>', '>>']:
             out = open(args[-1], 'w' if args[-2] == '>' else 'a')
             args = args[:-2]
         result = subprocess.run(args, stdout=out, **kwargs)

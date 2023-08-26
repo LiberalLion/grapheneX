@@ -21,9 +21,9 @@ class Shell(ShellCommands, Cmd):
 
         prompt_str = ""
         if self.namespace:
-            prompt_str = prompt_str + ":" + self.namespace
+            prompt_str = f"{prompt_str}:{self.namespace}"
         if self.module:
-            prompt_str = prompt_str + ":" + self.module
+            prompt_str = f"{prompt_str}:{self.module}"
         return f"[gX{prompt_str}]> "
 
 def start_cli():

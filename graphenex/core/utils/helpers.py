@@ -39,8 +39,7 @@ def parse_cli_args():
                         help="host and port to run the web interface")
     parser.add_argument('--open', action="store_true",
                         help="open browser on web server start")
-    args = vars(parser.parse_args())
-    return args
+    return vars(parser.parse_args())
 
 
 def print_header():
@@ -110,15 +109,15 @@ def get_modules():
 
     current_os = "win" if check_os() else "linux"
     json_data = get_mod_json()
-    return_dict = dict()
-    available_modules = list()
+    return_dict = {}
+    available_modules = []
     for namespace, modlist in json_data.items():
         if namespace == "presets":
             continue
         for module in modlist:
             module['namespace'] = namespace
             if module['target_os'] == current_os:
-                return_dict[module['namespace']] = dict()
+                return_dict[module['namespace']] = {}
                 available_modules.append(module)
 
         for module in available_modules:
@@ -131,10 +130,11 @@ def get_forbidden_namespaces(os='win' if check_os() else 'linux'):
     """Returns the restricted namespaces depending on the operating system"""
 
     json_data = get_mod_json()
-    namespaces = list()
-    for namespace, modlist in json_data.items():
-        if os not in [module['target_os'] for module in modlist]:
-            namespaces.append(namespace)
+    namespaces = [
+        namespace
+        for namespace, modlist in json_data.items()
+        if os not in [module['target_os'] for module in modlist]
+    ]
     namespaces.append("presets")
     return namespaces
 
@@ -143,11 +143,11 @@ def get_presets(os='win' if check_os() else 'linux'):
     """Parse and return the presets in the 'modules' file"""
 
     try:
-        presets = list()
-        for preset in get_mod_json()['presets']:
-            if preset['target_os'] == os:
-                presets.append(preset)
-        return presets
+        return [
+            preset
+            for preset in get_mod_json()['presets']
+            if preset['target_os'] == os
+        ]
     except KeyError:
         return None
 

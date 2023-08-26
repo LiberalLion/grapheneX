@@ -52,4 +52,4 @@ def run_server(args=None, exit_shell=True):
         if exit_shell:
             Shell().do_exit(None)
     except Exception as e:
-        logger.error('An error occurred: ' + str(e))
+        logger.error(f'An error occurred: {str(e)}')
